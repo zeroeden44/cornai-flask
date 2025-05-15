@@ -1,52 +1,45 @@
-from flask import Flask, render_template, request
-from tensorflow.keras.models import load_model
-from tensorflow.keras.preprocessing.image import load_img, img_to_array
+import streamlit as st
+import tensorflow as tf
 import numpy as np
-import os
+from PIL import Image
 import uuid
+import os
 
-app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = 'static/uploads'
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+# Setup folder untuk simpan gambar sementara
+UPLOAD_FOLDER = 'static/uploads'
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # Load model
-model = load_model('model_klasifikasi_penyakit_jagung_resnet50v2tunning.h5')
+model = tf.keras.models.load_model('model_klasifikasi_penyakit_jagung_resnet50v2tunning.h5')
 IMG_SIZE = (256, 256)
-CLASSES = ['Unknown', 'Bercak Daun', 'Hawar Daun','Karat Daun','Sehat']
+CLASSES = ['Unknown', 'Bercak Daun', 'Hawar Daun', 'Karat Daun', 'Sehat']
 
-@app.route('/', methods=['GET', 'POST'])
-def index():
-    if request.method == 'POST':
-        if 'image' not in request.files:
-            return render_template('klasifikasi.html', error="Tidak ada file yang diunggah.")
+st.title("Klasifikasi Penyakit Daun Jagung")
 
-        file = request.files['image']
-        if file.filename == '':
-            return render_template('klasifikasi.html', error="Tidak ada file yang dipilih.")
+uploaded_file = st.file_uploader("Upload gambar daun jagung", type=["jpg", "png", "jpeg"])
 
-        # Simpan file
-        filename = f"{uuid.uuid4().hex}_{file.filename}"
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(filepath)
+if uploaded_file is not None:
+    # Simpan file sementara
+    filename = f"{uuid.uuid4().hex}_{uploaded_file.name}"
+    filepath = os.path.join(UPLOAD_FOLDER, filename)
+    with open(filepath, "wb") as f:
+        f.write(uploaded_file.getbuffer())
 
-        # Preprocessing gambar
-        img = load_img(filepath, target_size=IMG_SIZE)
-        img_array = img_to_array(img)
-        img_array = np.expand_dims(img_array, axis=0)
-        img_array = img_array / 255.0  # Normalisasi sesuai model training
+    # Tampilkan gambar
+    image = Image.open(filepath)
+    st.image(image, caption="Gambar yang diunggah", use_column_width=True)
 
-        # Prediksi
-        prediction = model.predict(img_array)
-        predicted_index = np.argmax(prediction[0])
-        label = CLASSES[predicted_index]
-        confidence = round(prediction[0][predicted_index] * 100, 2)
+    # Preprocessing
+    img = image.resize(IMG_SIZE)
+    img_array = np.array(img) / 255.0
+    img_array = np.expand_dims(img_array, axis=0)
 
-        return render_template('klasifikasi.html',
-                               label=label,
-                               confidence=confidence,
-                               image_url=filepath)
+    # Prediksi
+    prediction = model.predict(img_array)
+    predicted_index = np.argmax(prediction[0])
+    label = CLASSES[predicted_index]
+    confidence = round(prediction[0][predicted_index] * 100, 2)
 
-    return render_template('klasifikasi.html')
-
-if __name__ == '__main__':
-    app.run(debug=True)
+    # Hasil prediksi
+    st.markdown(f"### Hasil Prediksi: `{label}`")
+    st.markdown(f"### Tingkat Keyakinan: `{confidence}%`")
