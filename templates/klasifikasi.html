@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Corn Leaf Classification</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Segoe+UI&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        background: linear-gradient(135deg, #a8edea, #fed6e3);
+        font-family: "Segoe UI", sans-serif;
+        margin: 0;
+        padding: 0;
+        height: 100vh;
+      }
+
+      .container {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        text-align: center;
+      }
+
+      h1 {
+        color: black;
+        margin-bottom: 20px;
+      }
+
+      .preview-box {
+        border: 2px dashed #ffd700;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+        background-color: rgba(255, 255, 255, 0.05);
+        max-width: 80%; /* added to limit the width */
+        max-height: 400px; /* added to limit the height */
+        display: none; /* default hidden, to be displayed once image is uploaded */
+        margin: 0 auto;
+      }
+
+      .preview-box img {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+
+      .button-group {
+        display: flex;
+        gap: 10px;
+      }
+
+      .upload-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 24px;
+        border: 2px solid black;
+        border-radius: 12px;
+        background: transparent;
+        color: black;
+        font-size: 16px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.3s, color 0.3s;
+      }
+
+      .upload-button:hover {
+        background-color: goldenrod;
+        color: white;
+      }
+
+      .upload-button svg {
+        width: 20px;
+        height: 20px;
+        fill: black;
+        transition: fill 0.3s;
+      }
+
+      .upload-button:hover svg {
+        fill: #081c0f;
+      }
+
+      input[type="file"] {
+        display: none;
+      }
+
+      .result {
+        margin-top: 20px;
+        font-size: 18px;
+        color: black;
+        background-color: #fff8dc;
+        padding: 10px 20px;
+        border-radius: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Corn Leaf Classification</h1>
+
+      <form method="POST" enctype="multipart/form-data">
+        <div
+          class="preview-box"
+          id="preview-box"
+          style="{% if image_url %}display: flex;{% else %}display: none;{% endif %}"
+        >
+          {% if image_url %}
+          <img src="{{ image_url }}" alt="Gambar" />
+          {% endif %}
+        </div>
+
+        <div class="button-group">
+          <label class="upload-button" for="upload-input">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+              <path d="M5 20h14v-2H5v2zm7-18l-5 5h3v4h4v-4h3l-5-5z" />
+            </svg>
+            Upload Image
+            <input
+              type="file"
+              name="image"
+              id="upload-input"
+              accept="image/*"
+              onchange="previewImage(event)"
+              required
+            />
+          </label>
+
+          <button type="submit" class="upload-button">Proses</button>
+        </div>
+      </form>
+
+      {% if label %}
+      <div class="result">
+        <p><strong>Hasil Prediksi:</strong> {{ label }}</p>
+        <p><strong>Confidence:</strong> {{ confidence }}%</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <script>
+      function previewImage(event) {
+        const input = event.target;
+        const previewBox = document.getElementById("preview-box");
+
+        if (input.files && input.files[0]) {
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            const img = new Image();
+            img.onload = function () {
+              previewBox.style.display = "flex"; // Ensure it's visible
+              previewBox.style.width = "auto"; // Reset width to auto for image resizing
+              previewBox.style.height = "auto"; // Reset height to auto for image resizing
+              previewBox.innerHTML = "";
+              previewBox.appendChild(img);
+            };
+            img.src = e.target.result;
+            img.alt = "Preview";
+          };
+          reader.readAsDataURL(input.files[0]);
+        }
+      }
+    </script>
+  </body>
+</html>
